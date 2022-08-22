@@ -38,3 +38,16 @@ jobs:
         run: |
           cd code
           yarn test --runInBand --ci
+
+      - uses: actions/checkout@v2
+      - name: Install requirements
+        run: pip install -r requirements.txt
+      - name: Run tests and collect coverage
+        run: pytest --cov .
+      - name: Upload coverage reports to Codecov
+        run: |
+          # Replace `linux` below with the appropriate OS
+          # Options are `alpine`, `linux`, `macos`, `windows`
+          curl -Os https://uploader.codecov.io/latest/windows/codecov
+          chmod +x codecov
+          ./codecov -t ${5b0d1e53-acf5-4748-934c-523200039182}
