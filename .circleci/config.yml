@@ -6,7 +6,7 @@ executors:
       class:
         description: The Resource class
         type: enum
-        enum: ['small', 'medium', 'medium+', 'large', 'xlarge']
+        enum: ['small', 'medium', 'medium+']
         default: 'medium'
     working_directory: /tmp/storybook
     docker:
@@ -19,7 +19,7 @@ executors:
       class:
         description: The Resource class
         type: enum
-        enum: ['small', 'medium', 'medium+', 'large', 'xlarge']
+        enum: ['small', 'medium', 'medium+']
         default: 'medium'
     working_directory: /tmp/storybook
     docker:
@@ -32,7 +32,7 @@ executors:
       class:
         description: The Resource class
         type: enum
-        enum: ['small', 'medium', 'medium+', 'large', 'xlarge']
+        enum: ['small', 'medium', 'medium+']
         default: 'medium'
     working_directory: /tmp/storybook
     docker:
@@ -46,6 +46,7 @@ executors:
 orbs:
   git-shallow-clone: guitarrapc/git-shallow-clone@2.0.3
   browser-tools: circleci/browser-tools@1.4.0
+  codecov: codecov/codecov@3.2.3
 
 commands:
   ensure-pr-is-labeled-with:
@@ -79,7 +80,7 @@ commands:
 jobs:
   build:
     executor:
-      class: xlarge
+      class: medium+
       name: sb_node_14_classic
     steps:
       - git-shallow-clone/checkout_advanced:
@@ -121,22 +122,22 @@ jobs:
             - code/lib
             - code/renderers
             - code/presets
-  chromatic:
-    executor: sb_node_14_browsers
-    parallelism: 15
-    steps:
-      # Keep using default checkout because Chromatic needs some git history to work properly
-      - checkout
-      - attach_workspace:
-          at: .
-      - run:
-          name: chromatic
-          command: |
-            cd code
-            yarn run-chromatics
+  # chromatic:
+  #   executor: sb_node_14_browsers
+  #   parallelism: 15
+  #   steps:
+  #     # Keep using default checkout because Chromatic needs some git history to work properly
+  #     - checkout
+  #     - attach_workspace:
+  #         at: .
+  #     - run:
+  #         name: chromatic
+  #         command: |
+  #           cd code
+  #           yarn run-chromatics
   examples:
     executor:
-      class: medium+
+      class: medium
       name: sb_node_14_browsers
     parallelism: 15
     steps:
@@ -148,7 +149,7 @@ jobs:
           name: examples
           command: |
             cd code
-            yarn build-storybooks --all
+            yarn build-storybooks --all --skip official-storybook
       - persist_to_workspace:
           root: .
           paths:
@@ -171,85 +172,86 @@ jobs:
           root: .
           paths:
             - .verdaccio-cache
-  e2e-tests-extended:
-    executor:
-      class: medium
-      name: sb_cypress_8_node_14
-    parallelism: 14
-    steps:
-      - when:
-          condition:
-            and:
-              - not:
-                  equal: [main, << pipeline.git.branch >>]
-              - not:
-                  equal: [next, << pipeline.git.branch >>]
-          steps:
-            - ensure-pr-is-labeled-with:
-                label: 'run e2e extended test suite'
-      - git-shallow-clone/checkout_advanced:
-          clone_options: '--depth 1 --verbose'
-      - attach_workspace:
-          at: .
-      - run:
-          name: running local registry
-          command: |
-            cd code
-            yarn local-registry --port 6000 --open
-          background: true
-      - run:
-          name: Wait for registry
-          command: |
-            cd code
-            yarn wait-on http://localhost:6000
-      - run:
-          name: Run E2E (extended) tests
-          command: |
-            cd code
-            yarn test:e2e-framework --clean --all --skip angular --skip angular12 --skip vue3 --skip web_components_typescript --skip cra --skip react
-          no_output_timeout: 5m
-      - store_artifacts:
-          path: /tmp/cypress-record
-          destination: cypress
-  e2e-tests-core:
-    executor:
-      class: large
-      name: sb_cypress_8_node_14
-    parallelism: 8
-    steps:
-      - git-shallow-clone/checkout_advanced:
-          clone_options: '--depth 1 --verbose'
-      - attach_workspace:
-          at: .
-      - run:
-          name: Running local registry
-          command: |
-            cd code
-            yarn local-registry --port 6000 --open
-          background: true
-      - run:
-          name: Wait for registry
-          command: |
-            cd code
-            yarn wait-on http://localhost:6000
-      - run:
-          name: Run E2E (core) tests
-          # Do not test CRA here because it's done in PnP part
-          # TODO: Remove `web_components_typescript` as soon as Lit 2 stable is released
-          command: |
-            cd code
-            yarn test:e2e-framework vue3 angular130 angular13 angular12 web_components_typescript web_components_lit2 react react_legacy_root_api
-          no_output_timeout: 5m
-      - run:
-          name: prep artifacts
-          when: always
-          command: zip -r /tmp/storybook-e2e-testing-out.zip /tmp/storybook-e2e-testing
-      - store_artifacts:
-          path: /tmp/cypress-record
-          destination: cypress
-      - store_artifacts:
-          path: /tmp/storybook-e2e-testing-out.zip
-          destination: e2e
+  # e2e-tests-extended:
+  #   executor:
+  #     class: medium
+  #     name: sb_cypress_8_node_14
+  #   parallelism: 14
+  #   steps:
+  #     - when:
+  #         condition:
+  #           and:
+  #             - not:
+  #                 equal: [main, << pipeline.git.branch >>]
+  #             - not:
+  #                 equal: [next, << pipeline.git.branch >>]
+  #         steps:
+  #           - ensure-pr-is-labeled-with:
+  #               label: 'run e2e extended test suite'
+  #     - git-shallow-clone/checkout_advanced:
+  #         clone_options: '--depth 1 --verbose'
+  #     - attach_workspace:
+  #         at: .
+  #     - run:
+  #         name: running local registry
+  #         command: |
+  #           cd code
+  #           yarn local-registry --port 6000 --open
+  #         background: true
+  #     - run:
+  #         name: Wait for registry
+  #         command: |
+  #           cd code
+  #           yarn wait-on http://localhost:6000
+  #     - run:
+  #         name: Run E2E (extended) tests
+  #         command: |
+  #           cd code
+  #           yarn test:e2e-framework --clean --all --skip angular --skip angular12 --skip vue3 --skip web_components_typescript --skip cra --skip react
+  #         no_output_timeout: 5m
+  #     - store_artifacts:
+  #         path: /tmp/cypress-record
+  #         destination: cypress
+  ##Commented out because of restrictions
+  # e2e-tests-core:
+  #   executor:
+  #     class: large
+  #     name: sb_cypress_8_node_14
+  #   parallelism: 8
+  #   steps:
+  #     - git-shallow-clone/checkout_advanced:
+  #         clone_options: '--depth 1 --verbose'
+  #     - attach_workspace:
+  #         at: .
+  #     - run:
+  #         name: Running local registry
+  #         command: |
+  #           cd code
+  #           yarn local-registry --port 6000 --open
+  #         background: true
+  #     - run:
+  #         name: Wait for registry
+  #         command: |
+  #           cd code
+  #           yarn wait-on http://localhost:6000
+  #     - run:
+  #         name: Run E2E (core) tests
+  #         # Do not test CRA here because it's done in PnP part
+  #         # TODO: Remove `web_components_typescript` as soon as Lit 2 stable is released
+  #         command: |
+  #           cd code
+  #           yarn test:e2e-framework vue3 angular130 angular13 angular12 web_components_typescript web_components_lit2 react react_legacy_root_api
+  #         no_output_timeout: 5m
+  #     - run:
+  #         name: prep artifacts
+  #         when: always
+  #         command: zip -r /tmp/storybook-e2e-testing-out.zip /tmp/storybook-e2e-testing
+  #     - store_artifacts:
+  #         path: /tmp/cypress-record
+  #         destination: cypress
+  #     - store_artifacts:
+  #         path: /tmp/storybook-e2e-testing-out.zip
+  #         destination: e2e
   # NOTE: this currently tests each story in docs mode, which doesn't make sense any more as stories
   #   can no longer run in docs mode. Instead we should probably change the test runner to test each
   #   docs entry if you run it in `VIEW_MODE=docs`
@@ -274,109 +276,109 @@ jobs:
   #         name: Run smoke tests
   #         command: yarn test:e2e-framework angular_modern_inline_rendering --test-runner --docs-mode
   #         no_output_timeout: 5m
-  cra-bench:
-    executor:
-      class: medium
-      name: sb_cypress_8_node_14
-    working_directory: /tmp/storybook
-    steps:
-      - git-shallow-clone/checkout_advanced:
-          clone_options: '--depth 1 --verbose'
-      - attach_workspace:
-          at: .
-      - run:
-          name: install playright
-          command: |
-            cd code
-            npx playwright install
-      - run:
-          name: Running local registry
-          command: |
-            cd code
-            yarn local-registry --port 6000 --open
-          background: true
-      - run:
-          name: Wait for registry
-          command: |
-            cd code
-            yarn wait-on http://localhost:6000
-      - run:
-          name: set up cra repro, skip tests
-          command: |
-            cd code
-            node ./lib/cli/bin/index.js repro -t cra --e2e ../cra-bench
-      - run:
-          name: Run @storybook/bench on repro
-          command: |
-            cd ./cra-bench
-            npx @storybook/bench@1.0.0--canary.11.52d1ee7.1 'echo noop' --label cra
-  e2e-tests-pnp:
-    executor:
-      class: medium
-      name: sb_cypress_8_node_14
-    working_directory: /tmp/storybook
-    steps:
-      - git-shallow-clone/checkout_advanced:
-          clone_options: '--depth 1 --verbose'
-      - attach_workspace:
-          at: .
-      - run:
-          name: Running local registry
-          command: |
-            cd code
-            yarn local-registry --port 6000 --open
-          background: true
-      - run:
-          name: Wait for registry
-          command: |
-            cd code
-            yarn wait-on http://localhost:6000
-      - run:
-          name: run e2e tests cra
-          command: |
-            cd code
-            yarn test:e2e-framework --pnp cra
-      # - run:
-      #     name: run e2e tests vue
-      #     command: yarn test:e2e-framework --pnp sfcVue
-      - run:
-          name: prep artifacts
-          when: always
-          command: zip -r /tmp/storybook-e2e-testing-out.zip /tmp/storybook-e2e-testing
-      - store_artifacts:
-          path: /tmp/cypress-record
-          destination: cypress
-      - store_artifacts:
-          path: /tmp/storybook-e2e-testing-out.zip
-          destination: e2e
-  e2e-tests-examples:
-    executor:
-      class: small
-      name: sb_cypress_8_node_14
-    steps:
-      - git-shallow-clone/checkout_advanced:
-          clone_options: '--depth 1 --verbose'
-      - attach_workspace:
-          at: .
-      - run:
-          name: running example
-          command: |
-            cd code
-            yarn serve-storybooks
-          background: true
-      - run:
-          name: await running examples
-          command: |
-            cd code
-            yarn await-serve-storybooks
-      - run:
-          name: cypress run
-          command: |
-            cd code
-            yarn test:e2e-examples
-      - store_artifacts:
-          path: /tmp/cypress-record
-          destination: cypress
+  # cra-bench:
+  #   executor:
+  #     class: medium
+  #     name: sb_cypress_8_node_14
+  #   working_directory: /tmp/storybook
+  #   steps:
+  #     - git-shallow-clone/checkout_advanced:
+  #         clone_options: '--depth 1 --verbose'
+  #     - attach_workspace:
+  #         at: .
+  #     - run:
+  #         name: install playright
+  #         command: |
+  #           cd code
+  #           npx playwright install
+  #     - run:
+  #         name: Running local registry
+  #         command: |
+  #           cd code
+  #           yarn local-registry --port 6000 --open
+  #         background: true
+  #     - run:
+  #         name: Wait for registry
+  #         command: |
+  #           cd code
+  #           yarn wait-on http://localhost:6000
+  #     - run:
+  #         name: set up cra repro, skip tests
+  #         command: |
+  #           cd code
+  #           node ./lib/cli/bin/index.js repro -t cra --e2e ../cra-bench
+  #     - run:
+  #         name: Run @storybook/bench on repro
+  #         command: |
+  #           cd ./cra-bench
+  #           npx @storybook/bench@1.0.0--canary.11.52d1ee7.1 'echo noop' --label cra
+  # e2e-tests-pnp:
+  #   executor:
+  #     class: medium
+  #     name: sb_cypress_8_node_14
+  #   working_directory: /tmp/storybook
+  #   steps:
+  #     - git-shallow-clone/checkout_advanced:
+  #         clone_options: '--depth 1 --verbose'
+  #     - attach_workspace:
+  #         at: .
+  #     - run:
+  #         name: Running local registry
+  #         command: |
+  #           cd code
+  #           yarn local-registry --port 6000 --open
+  #         background: true
+  #     - run:
+  #         name: Wait for registry
+  #         command: |
+  #           cd code
+  #           yarn wait-on http://localhost:6000
+  #     - run:
+  #         name: run e2e tests cra
+  #         command: |
+  #           cd code
+  #           yarn test:e2e-framework --pnp cra
+  #     # - run:
+  #     #     name: run e2e tests vue
+  #     #     command: yarn test:e2e-framework --pnp sfcVue
+  #     - run:
+  #         name: prep artifacts
+  #         when: always
+  #         command: zip -r /tmp/storybook-e2e-testing-out.zip /tmp/storybook-e2e-testing
+  #     - store_artifacts:
+  #         path: /tmp/cypress-record
+  #         destination: cypress
+  #     - store_artifacts:
+  #         path: /tmp/storybook-e2e-testing-out.zip
+  #         destination: e2e
+  # e2e-tests-examples:
+  #   executor:
+  #     class: small
+  #     name: sb_cypress_8_node_14
+  #   steps:
+  #     - git-shallow-clone/checkout_advanced:
+  #         clone_options: '--depth 1 --verbose'
+  #     - attach_workspace:
+  #         at: .
+  #     - run:
+  #         name: running example
+  #         command: |
+  #           cd code
+  #           yarn serve-storybooks
+  #         background: true
+  #     - run:
+  #         name: await running examples
+  #         command: |
+  #           cd code
+  #           yarn await-serve-storybooks
+  #     - run:
+  #         name: cypress run
+  #         command: |
+  #           cd code
+  #           yarn test:e2e-examples
+  #     - store_artifacts:
+  #         path: /tmp/cypress-record
+  #         destination: cypress
   smoke-tests:
     executor:
       class: medium+
@@ -575,9 +577,6 @@ workflows:
       - examples:
           requires:
             - build
-      - e2e-tests-examples:
-          requires:
-            - examples
       - smoke-tests:
           requires:
             - build
@@ -590,24 +589,10 @@ workflows:
       - coverage:
           requires:
             - unit-tests
-      - chromatic:
-          requires:
-            - examples
       - publish:
           requires:
             - build
-      - e2e-tests-extended:
-          requires:
-            - publish
-      - e2e-tests-core:
-          requires:
-            - publish
-      - e2e-tests-pnp:
-          requires:
-            - publish
-      - cra-bench:
-          requires:
-            - publish
+
 
       ## new workflow
       - create-sandboxes:
@@ -620,9 +605,6 @@ workflows:
           requires:
             - create-sandboxes
       - test-runner-sandboxes:
-          requires:
-            - build-sandboxes
-      - chromatic-sandboxes:
           requires:
             - build-sandboxes
       - e2e-sandboxes:
