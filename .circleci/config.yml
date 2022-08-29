@@ -47,6 +47,7 @@ orbs:
   git-shallow-clone: guitarrapc/git-shallow-clone@2.0.3
   browser-tools: circleci/browser-tools@1.4.0
   codecov: codecov/codecov@3.2.3
+  sonarcloud: sonarsource/sonarcloud@1.1.1
 
 commands:
   ensure-pr-is-labeled-with:
@@ -85,6 +86,7 @@ jobs:
     steps:
       - git-shallow-clone/checkout_advanced:
           clone_options: '--depth 1 --verbose'
+      - sonarcloud/scan
       - restore_cache:
           name: Restore Yarn cache
           keys:
@@ -570,7 +572,8 @@ jobs:
 workflows:
   test:
     jobs:
-      - build
+      - build:
+          context: sonarcloud
       - lint:
           requires:
             - build
