@@ -1,11 +1,6 @@
 import type { Args, AnyFramework, ArgsEnhancer } from '@storybook/csf';
 import { action } from '../index';
 
-// interface ActionsParameter {
-//   disable?: boolean;
-//   argTypesRegex?: RegExp;
-// }
-
 const isInInitialArgs = (name: string, initialArgs: Args) =>
   typeof initialArgs[name] === 'undefined' && !(name in initialArgs);
 

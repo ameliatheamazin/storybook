@@ -63,7 +63,6 @@ interface ItemProps {
   type: RuleType;
 }
 
-// export class Item extends Component<ItemProps, ItemState> {
 export const Item = (props: ItemProps) => {
   const [open, onToggle] = useState(false);
 
