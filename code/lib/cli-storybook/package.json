@@ -19,6 +19,19 @@
     "url": "https://opencollective.com/storybook"
   },
   "license": "MIT",
+  
+  "main": "dist/index.js", 
+  "module": "dist/index.mjs", 
+  "types": "dist/index.d.ts",
+   "exports": { 
+   ".": { 
+     "require": "./dist/index.js", 
+     "import": "./dist/index.mjs", 
+     "types": "./dist/index.d.ts" 
+   },
+   "./package.json": "./package.json" 
+     
+ }, 
   "bin": {
     "sb": "./index.js",
     "storybook": "./index.js"
@@ -26,6 +39,7 @@
   "scripts": {
     "check": "tsc --noEmit",
     "prepare": "node ../../../scripts/prepare.js"
+    "prepare": "esrun ../../scripts/prepare/bundle.ts" 
   },
   "dependencies": {
     "@storybook/cli": "7.0.0-alpha.23"
