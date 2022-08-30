@@ -51,6 +51,7 @@
     "@storybook/theming": "7.0.0-alpha.23",
     "@types/webpack-env": "^1.16.4",
     "core-js": "^3.8.2",
+    "ts-dedent": "^2.0.0",
     "global": "^4.4.0"
   },
   "peerDependencies": {
